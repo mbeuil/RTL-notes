@@ -1,0 +1,84 @@
+## mock a custom + mock the return value + test if return was used with X arguments
+
+```ts
+jest.mock("@hooks/useNavigateWithParamsReplace/useNavigateWithParamsReplace");
+jest.mock("@hooks/useSnackbar");
+
+describe("src/pages/number-detail-call-distribution/hooks/useAddIvrSetting", () => {
+  const useSnackbarMock = useSnackbar as jest.Mock;
+  const useNavigateWithParamsReplaceMock =
+    useNavigateWithParamsReplace as jest.Mock;
+  const snackbarError = jest.fn();
+  const snackbarSuccess = jest.fn();
+  const navigateMock = jest.fn();
+
+  const numberId = "42";
+
+  beforeEach(() => {
+    useSnackbarMock.mockReturnValue({
+      error: snackbarError,
+      success: snackbarSuccess,
+    });
+    useNavigateWithParamsReplaceMock.mockReturnValue(navigateMock);
+  });
+
+  test("Navigate to number purchase page to create new number", () => {
+    const { result } = renderHook(
+      () => useAddIvrSetting({ numberId, onCompleted: jest.fn() }),
+      {
+        wrapper: ({ children }: { children: React.ReactElement }) => {
+          return <MockedProvider>{children}</MockedProvider>;
+        },
+      }
+    );
+    act(() => {
+      result.current.addIvrSetting({
+        type: "new",
+        key: "8",
+      });
+    });
+    expect(navigateMock).toHaveBeenCalledWith(
+      NUMBER_PURCHASE_ROUTE_AT_IVR_CREATION,
+      {
+        numberId,
+        key: "8",
+      }
+    );
+  });
+});
+```
+
+## simulate requestAnimationFrame + redefine read only ref value + simulate mous mouvement
+
+```ts
+describe('hooks/useScrollableItem', () => {
+  const ref = React.createRef<HTMLDivElement>();
+  const waitRAF = () => new Promise((resolve) => requestAnimationFrame(resolve));
+
+  beforeEach(() => {
+    render(<div data-test='scrollable-container' ref={ref} />);
+
+    const el = screen.getByTestId('scrollable-container');
+
+    Object.defineProperty(el, 'clientHeight', { configurable: true, value: containerClientHeight });
+    Object.defineProperty(el, 'scrollHeight', { configurable: true, value: containerScrollHeight });
+  });
+
+  it('should make the container scroll to bottom', async () => {
+    const { result } = renderUseScrollableItem(ref);
+
+    act(() => {
+      result.current.startDragging();
+    });
+    act(() => {
+      fireEvent.mouseMove(screen.getByTestId('scrollable-container'), {
+        clientY: containerClientHeight - 20,
+      });
+    });
+
+    await waitRAF();
+    await waitFor(() =>
+      expect(screen.getByTestId('scrollable-container').scrollTop > 0).toBeTruthy()
+    );
+  });
+```
